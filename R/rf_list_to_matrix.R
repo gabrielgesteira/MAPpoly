@@ -4,7 +4,7 @@
 #' of class \code{poly.est.two.pts.pairwise} into a recombination
 #' fraction matrix
 #'
-#' \code{thresh_LOD_ph} should be set in order to only selects
+#' \code{thresh.LOD.ph} should be set in order to only selects
 #'     recombination fractions which have LOD scores associated to the
 #'     linkage phase configuration bigger than \code{thresh_LOD_ph}
 #'     for the second most likely linkage phase configuration.
@@ -102,7 +102,7 @@ rf_list_to_matrix <-  function(input.twopt,
   pair_input <- input.twopt$pairwise
   marnames <- rownames(get(input.twopt$data.name, pos = 1)$geno.dose)[sort(input.twopt$seq.num)]
   marindex <- sort(input.twopt$seq.num)
-  lod.mat <- rec.mat <- matrix(NA, input.twopt$n.mrk, input.twopt$n.mrk)
+  lod.ph.mat <- lod.mat <- rec.mat <- matrix(NA, input.twopt$n.mrk, input.twopt$n.mrk)
   if(shared.alleles)
     ShP <- ShQ <- lod.mat
   #### UPDATE: instead of recovering the order from names, provide using the object 'input.twopt'
@@ -138,7 +138,7 @@ rf_list_to_matrix <-  function(input.twopt,
     {
       if(any(is.na(x)))
       {
-        if(shared.alleles){return(c(NA,NA,NA,NA))} else return(c(NA,NA))
+        if(shared.alleles){return(c(NA,NA,NA,NA,NA))} else return(c(NA,NA,NA))
       }
       if((nrow(x) == 1 || abs(x[2 , 1]) >= thresh.LOD.ph) &&
          abs(x[1, 3]) >= thresh.LOD.rf &&
@@ -146,29 +146,31 @@ rf_list_to_matrix <-  function(input.twopt,
       {
         if(shared.alleles){
           y <- strsplit(rownames(x), "-")
-          return(c(x[1,2:3], as.numeric(y[[1]][1]), as.numeric(y[[1]][2])))
+          return(c(x[1,2:3], ifelse((nrow(x) > 1), abs(x[2,1]), NA), as.numeric(y[[1]][1]), as.numeric(y[[1]][2])))
         } else {
-          return(x[1,2:3])          
+          return(c(x[1,2:3], ifelse((nrow(x) > 1), abs(x[2,1]), NA)))
         }
       }
       else{
         {
-          if(shared.alleles){return(c(NA,NA,NA,NA))} else return(c(NA,NA))
+          if(shared.alleles){return(c(NA,NA,NA,NA,NA))} else return(c(NA,NA,NA))
         }
       }
-    }, thresh.LOD.ph, thresh.LOD.rf, thresh.rf, shared.alleles)
+    }, thresh.LOD.ph, thresh.LOD.rf, thresh.rf, shared.alleles)    
   }
   rec.mat[lower.tri(rec.mat)] <- as.numeric(rf.lod.mat[1,])
   rec.mat[upper.tri(rec.mat)] <- t(rec.mat)[upper.tri(rec.mat)]
   lod.mat[lower.tri(lod.mat)] <- as.numeric(rf.lod.mat[2,])
   lod.mat[upper.tri(lod.mat)] <- t(lod.mat)[upper.tri(lod.mat)]
+  lod.ph.mat[lower.tri(lod.ph.mat)] <- as.numeric(rf.lod.mat[3,])
+  lod.ph.mat[upper.tri(lod.ph.mat)] <- t(lod.ph.mat)[upper.tri(lod.ph.mat)]
   dimnames(rec.mat)<-dimnames(lod.mat)<-list(marnames, marnames)
   if(shared.alleles){
-    ShP[lower.tri(ShP)] <- as.numeric(rf.lod.mat[3,])
+    ShP[lower.tri(ShP)] <- as.numeric(rf.lod.mat[4,])
     ShP[upper.tri(ShP)] <- t(ShP)[upper.tri(ShP)]
-    ShQ[lower.tri(ShQ)] <- as.numeric(rf.lod.mat[4,])
+    ShQ[lower.tri(ShQ)] <- as.numeric(rf.lod.mat[5,])
     ShQ[upper.tri(ShQ)] <- t(ShQ)[upper.tri(ShQ)]
-    dimnames(ShP)<-dimnames(ShQ)<-list(marindex, marindex)
+    dimnames(lod.ph.mat)<-dimnames(ShP)<-dimnames(ShQ)<-list(marindex, marindex)
   } else{
     ShP<-ShQ<-NULL
   }
@@ -177,6 +179,7 @@ rf_list_to_matrix <-  function(input.twopt,
                  thresh.rf = thresh.rf,
                  rec.mat = rec.mat,
                  lod.mat = abs(lod.mat),
+                 lod.ph.mat = lod.ph.mat,
                  ShP = ShP,
                  ShQ = ShQ,
                  data.name  = input.twopt$data.name,
@@ -275,7 +278,7 @@ select_rf <- function(x, thresh.LOD.ph, thresh.LOD.rf, thresh.rf, shared.alleles
 {
   if(any(is.na(x)))
   {
-    if(shared.alleles){return(c(NA,NA,NA,NA))} else return(c(NA,NA))
+    if(shared.alleles){return(c(NA,NA,NA,NA,NA))} else return(c(NA,NA,NA))
   }
   if((nrow(x) == 1 || abs(x[2 , 1]) >= thresh.LOD.ph) &&
      abs(x[1, 3]) >= thresh.LOD.rf &&
@@ -283,14 +286,14 @@ select_rf <- function(x, thresh.LOD.ph, thresh.LOD.rf, thresh.rf, shared.alleles
   {
     if(shared.alleles){
       y <- strsplit(rownames(x), "-")
-      return(c(x[1,2:3], as.numeric(y[[1]][1]), as.numeric(y[[1]][2])))
+      return(c(x[1,2:3], ifelse((nrow(x) > 1), abs(x[2,1]), NA), as.numeric(y[[1]][1]), as.numeric(y[[1]][2])))
     } else {
-      return(x[1,2:3])          
+      return(c(x[1,2:3], ifelse((nrow(x) > 1), abs(x[2,1]), NA)))          
     }
   }
   else{
     {
-      if(shared.alleles){return(c(NA,NA,NA,NA))} else return(c(NA,NA))
+      if(shared.alleles){return(c(NA,NA,NA,NA,NA))} else return(c(NA,NA,NA))
     }
   }
 }

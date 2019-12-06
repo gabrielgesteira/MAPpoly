@@ -255,7 +255,8 @@ format_rf <- function(res) {
     rf <- x[1, order(LOD_ph, decreasing = TRUE)]
     LOD_rf <- abs(x[2, ] - x[3, ])[order(LOD_ph, decreasing = TRUE)]
     LOD_ph <- LOD_ph[order(LOD_ph, decreasing = TRUE)]
-    return(cbind(LOD_ph, rf, LOD_rf))
+    LOD_ph_abs <- LOD_ph + min(x[2, ])
+    return(cbind(LOD_ph, rf, LOD_rf, LOD_ph_abs))
   } else {
     nm <- paste(min(x[1], x[2]), min(x[3], x[4]), sep = "-")
     x <- cbind(0, rf = NA, LOD = NA)

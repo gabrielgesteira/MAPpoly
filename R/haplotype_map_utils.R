@@ -1,6 +1,10 @@
 #' Generates all possible linkage phases between two blocks of markers,
 #' eliminating equivalent configurations, i.e., configurations with the
-#' same likelihood
+#' same likelihood. If the argument \code{reduce} is TRUE (default),
+#' the \code{thresh.LOD.ph} value defined in the \code{rf_list_to_matrix}
+#' function is used. Then, only markers that presented phases
+#' with LOD differences higher than \code{thresh.LOD.ph} will be used,
+#' in order to reduce the number of phases to test.
 #'
 #' @param block1 submap with markers of the first block
 #' @param block2 submap with markers of the second block, or just a single marker identified by its position in the \code{mappoly.data} object
@@ -12,7 +16,7 @@
 #' @author Marcelo Mollinari, \email{mmollin@ncsu.edu} and Gabriel Gesteira, \email{gabrielgesteira@usp.br}
 #' @export generate_all_link_phases_elim_equivalent_haplo
 generate_all_link_phases_elim_equivalent_haplo <-
-  function(block1, block2, rf.matrix, m, max.inc = NULL) {
+  function(block1, block2, rf.matrix, m, reduce = TRUE, max.inc = NULL) {
     ## Check block2 class (block or single marker)
     if (is.numeric(block2)){
       dp <- get(rf.matrix$data.name)$dosage.p[block2]
@@ -25,24 +29,63 @@ generate_all_link_phases_elim_equivalent_haplo <-
     ## Getting M matrix
     M = list(P = rf.matrix$ShP[as.character(block1$seq.num),as.character(block2$seq.num)], 
              Q = rf.matrix$ShQ[as.character(block1$seq.num),as.character(block2$seq.num)])
+
+    ## Getting phase LOD's
+    lod.thres = rf.matrix$thresh.LOD.ph
+    lod.ph.mat = rf.matrix$lod.ph.mat[as.character(block1$seq.num),as.character(block2$seq.num)]
+    lod.ph.mat = lod.ph.mat >= lod.thres  
+    if (length(block2$seq.num) > 1){
+        bl1.mrk = rowSums(lod.ph.mat, na.rm = T) > 0
+        bl2.mrk = colSums(lod.ph.mat, na.rm = T) > 0
+    } else
+    {
+        bl1.mrk = lod.ph.mat
+    }
+      if (reduce == T && all(is.na(bl1.mrk))){
+          stop("No markers left in block 1 after reduction. Please, try again with a lower thresh.LOD.ph value in 'rf_list_to_matrix'.")
+      }
     
     ## Parent P: all permutations between blocks
-    hP1 <- ph_list_to_matrix(L = block1$seq.ph$P, m = m)
-    p1 <- apply(hP1, 2, paste, collapse = "")
-    hP2 <- ph_list_to_matrix(L = block2$seq.ph$P, m = m)
-    p2 <- apply(hP2, 2, paste, collapse = "")
-    dimnames(hP1) <- list(block1$seq.num, p1)
-    dimnames(hP2) <- list(block2$seq.num, p2)
-    p2 <- perm_tot(p2)
+      hP1 <- ph_list_to_matrix(L = block1$seq.ph$P, m = m)
+      if (reduce == T){
+          hP1 = hP1[bl1.mrk,]
+          p1 <- apply(hP1, 2, paste, collapse = "")
+          dimnames(hP1) <- list(block1$seq.num[bl1.mrk], p1)
+      } else {
+          p1 <- apply(hP1, 2, paste, collapse = "")
+          dimnames(hP1) <- list(block1$seq.num, p1)
+      }
+      hP2 <- ph_list_to_matrix(L = block2$seq.ph$P, m = m)
+      if (reduce == T && length(block2$seq.num) > 1){
+          hP2 = hP2[bl2.mrk,]
+          p2 <- apply(hP2, 2, paste, collapse = "")
+          dimnames(hP2) <- list(block2$seq.num[bl2.mrk], p2)
+      } else {
+          p2 <- apply(hP2, 2, paste, collapse = "")
+          dimnames(hP2) <- list(block2$seq.num, p2)
+      }
+      p2 <- perm_tot(p2)
     
     ## Parent Q: all permutations between blocks
-    hQ1 <- ph_list_to_matrix(L = block1$seq.ph$Q, m = m)
-    q1 <- apply(hQ1, 2, paste, collapse = "")
-    hQ2 <- ph_list_to_matrix(L = block2$seq.ph$Q, m = m)
-    q2 <- apply(hQ2, 2, paste, collapse = "")
-    dimnames(hQ1) <- list(block1$seq.num, q1)
-    dimnames(hQ2) <- list(block2$seq.num, q2)
-    q2 <- perm_tot(q2)
+      hQ1 <- ph_list_to_matrix(L = block1$seq.ph$Q, m = m)
+      if (reduce == T){
+          hQ1 = hQ1[bl1.mrk,]
+          q1 <- apply(hQ1, 2, paste, collapse = "")
+          dimnames(hQ1) <- list(block1$seq.num[bl1.mrk], q1)
+      } else {
+          q1 <- apply(hQ1, 2, paste, collapse = "")
+          dimnames(hQ1) <- list(block1$seq.num, q1)
+      }
+      hQ2 <- ph_list_to_matrix(L = block2$seq.ph$Q, m = m)
+      if (reduce == T && length(block2$seq.num) > 1){
+          hQ2 = hQ2[bl2.mrk,]
+          q2 <- apply(hQ2, 2, paste, collapse = "")
+          dimnames(hQ2) <- list(block2$seq.num[bl2.mrk], q2)
+      } else {
+          q2 <- apply(hQ2, 2, paste, collapse = "")
+          dimnames(hQ2) <- list(block2$seq.num, q2)
+      }
+      q2 <- perm_tot(q2)
     
     ## WP: removing redundancy and accounting for shared elleles
     wp <- NULL
