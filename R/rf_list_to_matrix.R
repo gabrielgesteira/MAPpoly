@@ -4,10 +4,10 @@
 #' of class \code{poly.est.two.pts.pairwise} into a recombination
 #' fraction matrix
 #'
-#' \code{thresh.LOD.ph} should be set in order to only selects
-#'     recombination fractions which have LOD scores associated to the
-#'     linkage phase configuration bigger than \code{thresh_LOD_ph}
-#'     for the second most likely linkage phase configuration.
+#' \code{thresh.LOD.ph} should be set in order to select only
+#'     recombination fractions that presented LOD scores
+#' higher than \code{thresh_LOD_ph} when compared to the
+#' second most likely linkage phase configuration.
 #'
 #' @param input.twopt an object of class \code{poly.est.two.pts.pairwise}
 #'
