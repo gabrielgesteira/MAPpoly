@@ -27,7 +27,7 @@ The conditional probability of a genotype at locus \eqn{k+1} given the genotype 
 \eqn{k} is ...
 }
 \examples{
-get_counts_one_parent(ploidy=4,gen.par.mk1=0:2,gen.par.mk2=0:2,gen.prog.mk1=1,gen.prog.mk2=1)
+#get_counts_one_parent(ploidy=4,gen.par.mk1=0:2,gen.par.mk2=0:2,gen.prog.mk1=1,gen.prog.mk2=1)
 
 }
 \keyword{internal}

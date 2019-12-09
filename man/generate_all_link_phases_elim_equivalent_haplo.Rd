@@ -4,10 +4,14 @@
 \alias{generate_all_link_phases_elim_equivalent_haplo}
 \title{Generates all possible linkage phases between two blocks of markers,
 eliminating equivalent configurations, i.e., configurations with the
-same likelihood}
+same likelihood. If the argument \code{reduce} is TRUE (default),
+the \code{thresh.LOD.ph} value defined in the \code{rf_list_to_matrix}
+function is used. Then, only markers that presented phases
+with LOD differences higher than \code{thresh.LOD.ph} will be used,
+in order to reduce the number of phases to test.}
 \usage{
 generate_all_link_phases_elim_equivalent_haplo(block1, block2, rf.matrix,
-  m, max.inc = NULL)
+  m, reduce = TRUE, max.inc = NULL)
 }
 \arguments{
 \item{block1}{submap with markers of the first block}
@@ -24,7 +28,11 @@ using the parameter \code{shared.alleles = TRUE}}
 \description{
 Generates all possible linkage phases between two blocks of markers,
 eliminating equivalent configurations, i.e., configurations with the
-same likelihood
+same likelihood. If the argument \code{reduce} is TRUE (default),
+the \code{thresh.LOD.ph} value defined in the \code{rf_list_to_matrix}
+function is used. Then, only markers that presented phases
+with LOD differences higher than \code{thresh.LOD.ph} will be used,
+in order to reduce the number of phases to test.
 }
 \author{
 Marcelo Mollinari, \email{mmollin@ncsu.edu} and Gabriel Gesteira, \email{gabrielgesteira@usp.br}

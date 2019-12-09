@@ -12,7 +12,7 @@
 #' \item{counts}{counts for each one of the classes}
 #' @keywords internal
 #' @examples
-#' get_counts_one_parent(ploidy=4,gen.par.mk1=0:2,gen.par.mk2=0:2,gen.prog.mk1=1,gen.prog.mk2=1)
+#' #get_counts_one_parent(ploidy=4,gen.par.mk1=0:2,gen.par.mk2=0:2,gen.prog.mk1=1,gen.prog.mk2=1)
 #'
 #' @useDynLib mappoly
 #' @export
