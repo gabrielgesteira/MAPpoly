@@ -26,8 +26,6 @@ expected genotypes under random chromosome pairing and no double reduction}
 \item{update.prob}{Logical. Should MAPpoly update genotype probabilities based on HMM? (default = FALSE)}
 
 \item{output}{if \code{update.prob = TRUE}, defines the output of the updated .vcf file}
-
-\item{...}{currently ignored}
 }
 \value{
 An object of class \code{mappoly.data} which contains a

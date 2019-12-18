@@ -2,6 +2,16 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' @export
+.get_ad <- function(mystring, ad_pos) {
+    .Call('_mappoly_get_ad', PACKAGE = 'mappoly', mystring, ad_pos)
+}
+
+#' @export
+.vcf_get_ad <- function(mat, ad_pos) {
+    .Call('_mappoly_vcf_get_ad', PACKAGE = 'mappoly', mat, ad_pos)
+}
+
+#' @export
 .vcf_transform_dosage <- function(mat, gt_pos) {
     .Call('_mappoly_vcf_transform_dosage', PACKAGE = 'mappoly', mat, gt_pos)
 }

@@ -24,12 +24,12 @@
  Description: Set of functions to be used with software R
 
  Functions used to allow .vcf input file support.
- Some of these functions were adapted from vcfR package.  
+ Some of these functions were adapted from vcfR package.
 
- Functions adapted by Gabriel Gesteira.
+ Written by Gabriel Gesteira (gabrielgesteira@usp.br)
 
- First version:       2019
- Last update: Aug 08, 2019
+ First version: August, 2019
+ Last update: December 16th, 2019
  */
 
 #include <Rcpp.h>
@@ -172,6 +172,92 @@ int get_ploidy(std::string mystring, int gt_pos){
   }  
   return start;
 }
+
+// Getting allele depths
+//' @export
+// [[Rcpp::export(name=".get_ad")]]
+Rcpp::NumericVector get_ad(std::string mystring, int ad_pos){
+  // mystring is a string containing vcf genotypes
+  // gt_pos is the GT position on vcf file
+  //  Rcpp::Rcout << "In strsplit" << std::endl;
+  
+  char split = ':';
+  char split2 = ',';
+  std::vector<std::string> vec_o_strings;
+  int start = 0;
+  unsigned int i=0;
+  float r,a;
+  Rcpp::NumericVector result(2);
+  
+  // Looping through string
+  for(i = 1; i < mystring.size(); i++){
+    if( mystring[i] == split){
+      std::string temp = mystring.substr(start, i - start);
+      vec_o_strings.push_back(temp);
+      start = i+1;
+      i = i+1;
+    }
+  }
+  
+  // Handle the last element
+  std::string temp = mystring.substr(start, i - start);
+  vec_o_strings.push_back(temp);
+  
+  // Testing for correct separation
+  std::string test = vec_o_strings[ad_pos-1];
+  if(test.size() > 1){
+    mystring = vec_o_strings[ad_pos-1];
+  }
+  
+  // Cleaning vec_o_strings
+  vec_o_strings.clear();
+  start = 0;
+
+  // Looping through string
+  for(i = 0; i < mystring.size(); i++){
+    if( mystring[i] == split2){
+      temp = mystring.substr(start, i - start);
+      vec_o_strings.push_back(temp);
+      start = i+1;
+      i = i+1;
+    }
+  }
+  
+  // Handle the last element
+  temp = mystring.substr(start, i - start);
+  vec_o_strings.push_back(temp);
+  
+  // separating strings
+  r = std::stof(vec_o_strings[0]);
+  a = std::stof(vec_o_strings[1]);
+  result[0] = r;
+  result[1] = a;
+  
+  return result;
+}
+
+// Getting allele depths for all markers and all individuals
+//' @export
+// [[Rcpp::export(name=".vcf_get_ad")]]
+Rcpp::List vcf_get_ad(Rcpp::StringMatrix& mat, int ad_pos){
+  int rowmat = mat.nrow();
+  int colmat = mat.ncol();
+  int k, l;
+  Rcpp::List xlistmrk(rowmat);
+  Rcpp::List xlistind(colmat);
+  
+  Rcpp::NumericVector get_ad(std::string mystring, int ad_pos);
+  
+  for (k=0; k < rowmat; k++){
+    for (l=0; l < colmat; l++){
+      xlistind[l] = get_ad(as<std::string>(mat(k,l)), ad_pos);
+    }
+    xlistmrk[k] = xlistind;
+    // xlistmrk.splice(xlistmrk.end(), xlistind);
+  }
+  return xlistmrk;
+}
+
 
 // Getting dosages for all markers and all individuals
 //' @export

@@ -23,8 +23,6 @@
 #' 
 #' @param output if \code{update.prob = TRUE}, defines the output of the updated .vcf file
 #' 
-#' @param ... currently ignored
-#'
 #' @return An object of class \code{mappoly.data} which contains a
 #'     list with the following components:
 #'     \item{m}{ploidy level}
@@ -93,7 +91,7 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
     mrk.names[which(is.na(mrk.names))] = paste0("no_name_", seq(1, no_name, 1))
   }
   cat("Processing genotypes...")
-  cname = which(unlist(strsplit(unique(input.data$gt[,1]), ":")) == "GT") # Defining GT position
+  cname = which(unlist(strsplit(unique(input.data$gt[,1]), ":")) == "GT") # Defining GT position    
   ## file.ploidy = length(unlist(strsplit(unique(input.data$gt[,2])[1], "/"))) # Checking ploidy (old)
   geno.ploidy = .vcf_get_ploidy(input.data$gt[,-1], cname) # Getting all ploidy levels
   file.ploidy = unique(c(geno.ploidy)) # Getting different ploidy levels
@@ -338,3 +336,97 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
   }
   return(vcf)
 }
+
+#' Function written to load Python modules and functions for SuperMASSA 
+#' @param void interfunction to be documented
+#' @keywords internal
+#' 
+.load_py_modules_and_functions = function(){
+    ## Importing Python modules and functions
+    numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = NULL
+
+    ## .install_py_mod <- function(method = "auto", conda = "auto") {
+    ##     reticulate::py_install("numpy", method = method, conda = conda)
+    ##     reticulate::py_install("tempfile", method = method, conda = conda)
+    ##     reticulate::py_install("pylab", method = method, conda = conda)
+    ##     reticulate::py_install("matplotlib", method = method, conda = conda)
+    ##     reticulate::py_install("sys", method = method, conda = conda)
+    ##     reticulate::py_install("math", method = method, conda = conda)
+    ##     reticulate::py_install("getopt", method = method, conda = conda)
+    ##     reticulate::py_install("cProfile", method = method, conda = conda)
+    ##     reticulate::py_install("itertools", method = method, conda = conda)
+    ##     reticulate::py_install("copy", method = method, conda = conda)
+    ##     reticulate::py_install("pprint", method = method, conda = conda)
+    ##     reticulate::py_install("random", method = method, conda = conda)
+    ## }
+
+    ## .install_py_mod()
+    
+    .onLoad <- function(libname, pkgname) {
+        numpy <<- reticulate::import("numpy", delay_load = TRUE)
+        tempfile <<- reticulate::import("tempfile", delay_load = TRUE)
+        pylab <<- reticulate::import("pylab", delay_load = TRUE)
+        matplotlib <<- reticulate::import("matplotlib", delay_load = TRUE)
+        sys <<- reticulate::import("sys", delay_load = TRUE)
+        math <<- reticulate::import("math", delay_load = TRUE)
+        getopt <<- reticulate::import("getopt", delay_load = TRUE)
+        cProfile <<- reticulate::import("cProfile", delay_load = TRUE)
+        itertools <<- reticulate::import("itertools", delay_load = TRUE)
+        copy <<- reticulate::import("copy", delay_load = TRUE)
+        pprint <<- reticulate::import("pprint", delay_load = TRUE)
+        random <<- reticulate::import("random", delay_load = TRUE)
+    }
+
+    .onLoad()
+    ## Importing SuperMASSA functions
+    if (reticulate::py_module_available("random")){
+        reticulate::source_python('./supermassa/SuperMASSA_mod.py')
+    }
+}
+
+#' Function written to perform SNP genotyping using SuperMASSA
+#' @param void interfunction to be documented
+#' @keywords internal
+#'
+#' @export genotype_SM
+genotype_SM = function(data, ploidy, parent.1, parent.2){
+    ## Loading functions
+    .load_py_modules_and_functions()
+    ## Check SM main function
+    if (!exists('real_main')){
+        stop("Your system is not configured with the necessary Python libraries. Please double check the vignettes and try again.")
+    }
+    ## Getting AD fields from vcf file
+    ind.names = colnames(input.data$gt)[-1]
+    adname = which(unlist(strsplit(unique(input.data$gt[,1]), ":")) == "AD") # Defining AD position
+    geno.depth = .vcf_get_ad(input.data$gt[,-1], adname) # Getting all ploidy levels
+    p.1 = which(ind.names == parent.1)
+    p.2 = which(ind.names == parent.2)
+
+    m1.pop = geno.depth[[1]][-c(p.1,p.2)]
+    m1.par = geno.depth[[1]][c(p.1,p.2)]
+
+    length(geno.depth[[1]])
+    geno.depth[[1]][223]
+    
+    ## Generating input data (single marker)
+    ## data = table with individuals and ref-alt allele counts (x and y)
+    input.SM = lapply(split(data,data$individuals), function(x) list(array(c(x$x,x$y))))
+    parents = input.SM[parents]
+    pop = input.SM[-parents]
+
+    ## Generating arguments list
+    argv = list(inference="f1",
+                file=m1.pop,
+                ploidy_range="2",
+                f1_parent_data=m1.par,
+                sigma_range="0.01:0.1:0.01",
+                save_geno_prob_dist="",
+                naive_posterior_reporting_threshold="0.00001",
+                print_genotypes="")
+
+    ## Running for single marker
+    out.SM = real_main(argv)   
+}
+
+library(reticulate)

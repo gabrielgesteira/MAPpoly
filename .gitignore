@@ -9,3 +9,6 @@ docs/*.rda
 docs/*.rdb
 inst/extdata/hexatoy.vcf.gz
 test.R
+test_vcf.R
+*.vcf
+supermassa/read_supermassa_prior.R
