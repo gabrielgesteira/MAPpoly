@@ -228,7 +228,7 @@ Rcpp::NumericVector get_ad(std::string mystring, int ad_pos){
   vec_o_strings.push_back(temp);
   
   // separating strings
-  r = std::stof(vec_o_strings[0]);
+  r = std::stof(vec_o_strings[0]); // before was stoi/stof
   a = std::stof(vec_o_strings[1]);
   result[0] = r;
   result[1] = a;

@@ -79,7 +79,8 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
   }
   cat("Reading data...\n")
   input.data = .read.vcfR(file.in) # Reading file
-  ind.names = colnames(input.data$gt)[-1]
+
+    ind.names = colnames(input.data$gt)[-1]
   n.mrk = dim(input.data$gt)[1] # Getting number of markers
   n.ind = length(ind.names) - 2 # Number of individuals excepting two parents
   sequence = input.data$fix[,1] # Getting chromosome information
@@ -343,9 +344,11 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
 #' 
 .load_py_modules_and_functions = function(){
     ## Importing Python modules and functions
-    numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = NULL
+    ## All modules start with 'django-thumborize' because it is only available in Python 2.7, so it is first installed and called to teach reticulate to use Python 2.7 (needed for SuperMASSA)
+    django-thumborize = numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
 
     ## .install_py_mod <- function(method = "auto", conda = "auto") {
+    ##     reticulate::py_install("django-thumborize", method = method, conda = conda)
     ##     reticulate::py_install("numpy", method = method, conda = conda)
     ##     reticulate::py_install("tempfile", method = method, conda = conda)
     ##     reticulate::py_install("pylab", method = method, conda = conda)
@@ -358,11 +361,13 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
     ##     reticulate::py_install("copy", method = method, conda = conda)
     ##     reticulate::py_install("pprint", method = method, conda = conda)
     ##     reticulate::py_install("random", method = method, conda = conda)
+    ##     reticulate::py_install("pandas", method = method, conda = conda)
     ## }
 
-    ## .install_py_mod()
+    ## install_py_mod()
     
     .onLoad <- function(libname, pkgname) {
+        numpy <<- reticulate::import("django-thumborize", delay_load = TRUE)
         numpy <<- reticulate::import("numpy", delay_load = TRUE)
         tempfile <<- reticulate::import("tempfile", delay_load = TRUE)
         pylab <<- reticulate::import("pylab", delay_load = TRUE)
@@ -377,9 +382,9 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
         random <<- reticulate::import("random", delay_load = TRUE)
     }
 
-    .onLoad()
+    onLoad()
     ## Importing SuperMASSA functions
-    if (reticulate::py_module_available("random")){
+    if (reticulate::py_module_available("django-thumborize")){
         reticulate::source_python('./supermassa/SuperMASSA_mod.py')
     }
 }
@@ -389,44 +394,128 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
 #' @keywords internal
 #'
 #' @export genotype_SM
-genotype_SM = function(data, ploidy, parent.1, parent.2){
+genotype_SM = function(data, ploidy, ploidy.range, parent.1, parent.2, n.clusters = 1, verbose = TRUE){
     ## Loading functions
-    .load_py_modules_and_functions()
+    load_py_modules_and_functions()
+
     ## Check SM main function
     if (!exists('real_main')){
         stop("Your system is not configured with the necessary Python libraries. Please double check the vignettes and try again.")
     }
+    
     ## Getting AD fields from vcf file
+    ## geno.depth is a list of all markers. For each marker, we have allele counts for all individuals
+    ## TODO: improve this (maybe parallel) and handle marker names
     ind.names = colnames(input.data$gt)[-1]
     adname = which(unlist(strsplit(unique(input.data$gt[,1]), ":")) == "AD") # Defining AD position
     geno.depth = .vcf_get_ad(input.data$gt[,-1], adname) # Getting all ploidy levels
+    geno.depth = lapply(geno.depth, function(x) lapply(x, function(x) x = list(array(x))))
+
+    ## Defining ploidy range
+    if (is.null(ploidy.range) && ploidy > 2)
+        ploidy.range = paste0(ploidy-2,':',ploidy+2)
+    else ploidy.range = ploidy
+
+    ## Naming elements of list (individuals)
+    for (i in 1:length(geno.depth)){
+        names(geno.depth[[i]]) = ind.names
+    }
+
+    ## Getting parents position
     p.1 = which(ind.names == parent.1)
     p.2 = which(ind.names == parent.2)
 
-    m1.pop = geno.depth[[1]][-c(p.1,p.2)]
-    m1.par = geno.depth[[1]][c(p.1,p.2)]
-
-    length(geno.depth[[1]])
-    geno.depth[[1]][223]
-    
-    ## Generating input data (single marker)
-    ## data = table with individuals and ref-alt allele counts (x and y)
-    input.SM = lapply(split(data,data$individuals), function(x) list(array(c(x$x,x$y))))
-    parents = input.SM[parents]
-    pop = input.SM[-parents]
-
-    ## Generating arguments list
-    argv = list(inference="f1",
-                file=m1.pop,
-                ploidy_range="2",
-                f1_parent_data=m1.par,
-                sigma_range="0.01:0.1:0.01",
-                save_geno_prob_dist="",
-                naive_posterior_reporting_threshold="0.00001",
-                print_genotypes="")
-
-    ## Running for single marker
-    out.SM = real_main(argv)   
+    ## Running SM in parallel mode
+    if (n.clusters > 1){
+        start <- proc.time()
+        if (verbose)
+            cat("INFO: Using ", n.clusters, " CPUs.\n")
+        cl <- makeCluster(n.clusters)
+        clusterEvalQ(cl, require(mappoly))
+        on.exit(stopCluster(cl))
+        res <- parLapply(cl,
+                         geno.depth,
+                         function(input){
+                             m1.pop = input[-c(p.1,p.2)]
+                             m1.par = input[c(p.1,p.2)]
+                             ## Generating arguments list
+                             argv = list(inference="f1",
+                                         file=m1.pop,
+                                         ploidy_range=ploidy.range,
+                                         f1_parent_data=m1.par,
+                                         sigma_range="0.01:0.1:0.01",
+                                         save_geno_prob_dist="",
+                                         naive_posterior_reporting_threshold="0.0000001",
+                                         print_genotypes="")
+                             ## Running for single marker
+                             out.SM = real_main(argv)
+                             ## Checking detected ploidy
+                             if (out.SM$args$ploidy == ploidy){
+                                 return(out.SM)
+                             }
+                         }
+                         )
+        end <- proc.time()
+        if (verbose) {
+            cat("INFO: Calculation took:",
+                round((end - start)[3],
+                      digits = 3),
+                "seconds\n")
+        }        
+    } else {
+        ## Running SM in single mode
+        ## Creating list to handle results
+        results.SM = list()
+        if (verbose)
+            cat("INFO: Going singlemode.")
+        start = proc.time()
+        for (k in 1:length(geno.depth)){
+            m1.pop = geno.depth[[k]][-c(p.1,p.2)]
+            m1.par = geno.depth[[k]][c(p.1,p.2)]
+            ## Generating arguments list
+            argv = list(inference="f1",
+                        file=m1.pop,
+                        ploidy_range="2:8",
+                        f1_parent_data=m1.par,
+                        sigma_range="0.01:0.1:0.01",
+                        save_geno_prob_dist="",
+                        naive_posterior_reporting_threshold="0.0000001",
+                        print_genotypes="")
+            ## Running for single marker
+            out.SM = real_main(argv)
+            ## Checking detected ploidy
+            if (out.SM$args$ploidy == ploidy){
+                results.SM[[k]] = out.SM
+            }
+        }
+        end = proc.time()
+        if (verbose) {
+            cat("INFO: Calculation took:",
+                round((end - start)[3], digits = 3),
+                "seconds\n")
+        }
+    }
 }
 
-library(reticulate)
+## #' Function written to perform SNP genotyping using SuperMASSA
+## #' @param void interfunction to be documented
+## #' @keywords internal
+## .est_dosages = function(input, ploidy, p.1, p.2){
+##     m1.pop = input[-c(p.1,p.2)]
+##     m1.par = input[c(p.1,p.2)]
+##     ## Generating arguments list
+##     argv = list(inference="f1",
+##                 file=m1.pop,
+##                 ploidy_range="2:8",
+##                 f1_parent_data=m1.par,
+##                 sigma_range="0.01:0.1:0.01",
+##                 save_geno_prob_dist="",
+##                 naive_posterior_reporting_threshold="0.0000001",
+##                 print_genotypes="")
+##     ## Running for single marker
+##     out.SM = real_main(argv)
+##     ## Checking detected ploidy
+##     if (out.SM$args$ploidy == ploidy){
+##         return(out.SM)
+##     }
+## }
