@@ -338,54 +338,82 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
   return(vcf)
 }
 
+
+#' Function written to load Python modules and functions for SuperMASSA 
+#' @param void interfunction to be documented
+#' @keywords internal
+.install_py_mod <- function(pkgname, method = "auto", conda = "auto") {
+    reticulate::py_install(pkgname, method = method, conda = conda)
+    ## reticulate::py_install("django-thumborize", method = method, conda = conda)
+    ## reticulate::py_install("numpy", method = method, conda = conda)
+    ## reticulate::py_install("tempfile", method = method, conda = conda)
+    ## reticulate::py_install("pylab", method = method, conda = conda)
+    ## reticulate::py_install("matplotlib", method = method, conda = conda)
+    ## reticulate::py_install("sys", method = method, conda = conda)
+    ## reticulate::py_install("math", method = method, conda = conda)
+    ## reticulate::py_install("getopt", method = method, conda = conda)
+    ## reticulate::py_install("cProfile", method = method, conda = conda)
+    ## reticulate::py_install("itertools", method = method, conda = conda)
+    ## reticulate::py_install("copy", method = method, conda = conda)
+    ## reticulate::py_install("pprint", method = method, conda = conda)
+    ## reticulate::py_install("random", method = method, conda = conda)
+    ## reticulate::py_install("pandas", method = method, conda = conda)
+}
+
+#' Function written to load Python modules and functions for SuperMASSA 
+#' @param void interfunction to be documented
+#' @keywords internal
+.oonLoad <- function(pkgname) {
+    reticulate::import(pkgname, delay_load = TRUE)
+    ## django <<- reticulate::import("django-thumborize", delay_load = TRUE)
+    ## numpy <<- reticulate::import("numpy", delay_load = TRUE)
+    ## tempfile <<- reticulate::import("tempfile", delay_load = TRUE)
+    ## pylab <<- reticulate::import("pylab", delay_load = TRUE)
+    ## matplotlib <<- reticulate::import("matplotlib", delay_load = TRUE)
+    ## sys <<- reticulate::import("sys", delay_load = TRUE)
+    ## math <<- reticulate::import("math", delay_load = TRUE)
+    ## getopt <<- reticulate::import("getopt", delay_load = TRUE)
+    ## cProfile <<- reticulate::import("cProfile", delay_load = TRUE)
+    ## itertools <<- reticulate::import("itertools", delay_load = TRUE)
+    ## copy <<- reticulate::import("copy", delay_load = TRUE)
+    ## pprint <<- reticulate::import("pprint", delay_load = TRUE)
+    ## random <<- reticulate::import("random", delay_load = TRUE)
+}
+
 #' Function written to load Python modules and functions for SuperMASSA 
 #' @param void interfunction to be documented
 #' @keywords internal
 #' 
-.load_py_modules_and_functions = function(){
+.load_py_modules_and_functions  <-  function(){
     ## Importing Python modules and functions
     ## All modules start with 'django-thumborize' because it is only available in Python 2.7, so it is first installed and called to teach reticulate to use Python 2.7 (needed for SuperMASSA)
-    django-thumborize = numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
-
-    ## .install_py_mod <- function(method = "auto", conda = "auto") {
-    ##     reticulate::py_install("django-thumborize", method = method, conda = conda)
-    ##     reticulate::py_install("numpy", method = method, conda = conda)
-    ##     reticulate::py_install("tempfile", method = method, conda = conda)
-    ##     reticulate::py_install("pylab", method = method, conda = conda)
-    ##     reticulate::py_install("matplotlib", method = method, conda = conda)
-    ##     reticulate::py_install("sys", method = method, conda = conda)
-    ##     reticulate::py_install("math", method = method, conda = conda)
-    ##     reticulate::py_install("getopt", method = method, conda = conda)
-    ##     reticulate::py_install("cProfile", method = method, conda = conda)
-    ##     reticulate::py_install("itertools", method = method, conda = conda)
-    ##     reticulate::py_install("copy", method = method, conda = conda)
-    ##     reticulate::py_install("pprint", method = method, conda = conda)
-    ##     reticulate::py_install("random", method = method, conda = conda)
-    ##     reticulate::py_install("pandas", method = method, conda = conda)
-    ## }
-
-    ## install_py_mod()
+    numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
     
-    .onLoad <- function(libname, pkgname) {
-        numpy <<- reticulate::import("django-thumborize", delay_load = TRUE)
-        numpy <<- reticulate::import("numpy", delay_load = TRUE)
-        tempfile <<- reticulate::import("tempfile", delay_load = TRUE)
-        pylab <<- reticulate::import("pylab", delay_load = TRUE)
-        matplotlib <<- reticulate::import("matplotlib", delay_load = TRUE)
-        sys <<- reticulate::import("sys", delay_load = TRUE)
-        math <<- reticulate::import("math", delay_load = TRUE)
-        getopt <<- reticulate::import("getopt", delay_load = TRUE)
-        cProfile <<- reticulate::import("cProfile", delay_load = TRUE)
-        itertools <<- reticulate::import("itertools", delay_load = TRUE)
-        copy <<- reticulate::import("copy", delay_load = TRUE)
-        pprint <<- reticulate::import("pprint", delay_load = TRUE)
-        random <<- reticulate::import("random", delay_load = TRUE)
+    modules = c("numpy", "tempfile", "pylab", "matplotlib", "sys", "math", "getopt", "cProfile", "itertools", "copy", "pprint", "random", "pandas")
+
+    ## Checking module availability
+    for (i in modules){
+        if (reticulate::py_module_available(i)){
+            .oonLoad(pkgname=i)
+        } else {
+            .install_py_mod(pkgname=i)
+            .oonLoad(pkgname=i)
+        }
     }
 
-    onLoad()
+    ## Record available modules
+    avail = rep(NA, length(modules))
+    for (i in modules){
+        if (reticulate::py_module_available(i)){
+            avail[which(modules == i)] = TRUE
+        } else {avail[which(modules == i)] = FALSE}
+    }
+
     ## Importing SuperMASSA functions
-    if (reticulate::py_module_available("django-thumborize")){
+    if (all(avail)){
         reticulate::source_python('./supermassa/SuperMASSA_mod.py')
+    } else {
+        stop("Some modules are not present in Python 2.7 [module(s): ", modules[!avail], "]. Please install them and try again.")
     }
 }
 
@@ -394,14 +422,14 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
 #' @keywords internal
 #'
 #' @export genotype_SM
-genotype_SM = function(data, ploidy, ploidy.range, parent.1, parent.2, n.clusters = 1, verbose = TRUE){
+genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent.2, n.clusters = 1, verbose = TRUE){
     ## Loading functions
-    load_py_modules_and_functions()
+    .load_py_modules_and_functions()
 
-    ## Check SM main function
-    if (!exists('real_main')){
-        stop("Your system is not configured with the necessary Python libraries. Please double check the vignettes and try again.")
-    }
+    ## ## Check SM main function
+    ## if (!exists('real_main')){
+    ##     stop("Your system is not configured with the necessary Python libraries. Please double check the vignettes and try again.")
+    ## }
     
     ## Getting AD fields from vcf file
     ## geno.depth is a list of all markers. For each marker, we have allele counts for all individuals
@@ -452,7 +480,7 @@ genotype_SM = function(data, ploidy, ploidy.range, parent.1, parent.2, n.cluster
                              ## Checking detected ploidy
                              if (out.SM$args$ploidy == ploidy){
                                  return(out.SM)
-                             }
+                             } else {return(NA)}
                          }
                          )
         end <- proc.time()
@@ -475,7 +503,7 @@ genotype_SM = function(data, ploidy, ploidy.range, parent.1, parent.2, n.cluster
             ## Generating arguments list
             argv = list(inference="f1",
                         file=m1.pop,
-                        ploidy_range="2:8",
+                        ploidy_range=ploidy.range,
                         f1_parent_data=m1.par,
                         sigma_range="0.01:0.1:0.01",
                         save_geno_prob_dist="",
@@ -486,7 +514,7 @@ genotype_SM = function(data, ploidy, ploidy.range, parent.1, parent.2, n.cluster
             ## Checking detected ploidy
             if (out.SM$args$ploidy == ploidy){
                 results.SM[[k]] = out.SM
-            }
+            } else {results.SM[[k]] = NA}
         }
         end = proc.time()
         if (verbose) {
