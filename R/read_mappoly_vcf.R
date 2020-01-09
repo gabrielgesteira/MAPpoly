@@ -387,9 +387,9 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
 .load_py_modules_and_functions  <-  function(){
     ## Importing Python modules and functions
     ## All modules start with 'django-thumborize' because it is only available in Python 2.7, so it is first installed and called to teach reticulate to use Python 2.7 (needed for SuperMASSA)
-    numpy = tempfile = ipylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
+    numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
     
-    modules = c("numpy", "tempfile", "ipylab", "matplotlib", "sys", "math", "getopt", "cProfile", "itertools", "copy", "pprint", "random", "pandas")
+    modules = c("numpy", "tempfile", "pylab", "matplotlib", "sys", "math", "getopt", "cProfile", "itertools", "copy", "pprint", "random", "pandas")
 
     ## Checking module availability
     for (i in modules){
@@ -413,7 +413,7 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
     if (all(avail)){
         reticulate::source_python('./supermassa/SuperMASSA_mod.py')
     } else {
-        stop("Some modules are not present in Python 2.7 [module(s): ", modules[!avail], "]. Please install them and try again.")
+        stop("Some modules are not present in Python [module(s): ", modules[!avail], "]. Please install them and try again.")
     }
 }
 
