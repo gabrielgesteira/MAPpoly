@@ -387,9 +387,10 @@ read_vcf <- function(file.in, filter.non.conforming = TRUE, parent.1, parent.2, 
 .load_py_modules_and_functions  <-  function(){
     ## Importing Python modules and functions
     ## All modules start with 'django-thumborize' because it is only available in Python 2.7, so it is first installed and called to teach reticulate to use Python 2.7 (needed for SuperMASSA)
-    numpy = tempfile = pylab = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
+    Sys.setenv(RETICULATE_PYTHON = "/usr/bin/python2.7")
+    numpy = tempfile = matplotlib = sys = math = getopt = cProfile = itertools = copy = pprint = random = pandas = NULL
     
-    modules = c("numpy", "tempfile", "pylab", "matplotlib", "sys", "math", "getopt", "cProfile", "itertools", "copy", "pprint", "random", "pandas")
+    modules = c("numpy", "tempfile", "matplotlib", "sys", "math", "getopt", "cProfile", "itertools", "copy", "pprint", "random", "pandas")
 
     ## Checking module availability
     for (i in modules){
