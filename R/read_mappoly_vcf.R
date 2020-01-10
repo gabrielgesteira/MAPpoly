@@ -463,7 +463,7 @@ genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent
         clusterEvalQ(cl, require(mappoly))
         clusterExport(cl, c('real_main'))
         on.exit(stopCluster(cl))
-        res <- parLapply(cl,
+        results.SM <- parLapply(cl,
                          geno.depth,
                          function(input){
                              m1.pop = input[-c(p.1,p.2)]
@@ -482,7 +482,7 @@ genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent
                              ## Checking detected ploidy
                              if (out.SM$args$ploidy == ploidy){
                                  return(out.SM)
-                             } else {return(NA)}
+                             } else {return(0)}
                          }
                          )
         end <- proc.time()
@@ -516,7 +516,7 @@ genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent
             ## Checking detected ploidy
             if (out.SM$args$ploidy == ploidy){
                 results.SM[[k]] = out.SM
-            } else {results.SM[[k]] = NA}
+            } else {results.SM[[k]] = 0}
         }
         end = proc.time()
         if (verbose) {
@@ -525,6 +525,7 @@ genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent
                 "seconds\n")
         }
     }
+    return(results.SM)
 }
 
 ## #' Function written to perform SNP genotyping using SuperMASSA
