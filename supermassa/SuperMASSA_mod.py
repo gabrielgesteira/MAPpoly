@@ -26,7 +26,8 @@ import copy
 import pprint
 import matplotlib
 import numpy
-import pylab as P
+from matplotlib import pylab as P
+# import pylab as P
 import sys
 import math
 import random
