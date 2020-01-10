@@ -461,7 +461,7 @@ genotype_SM = function(input.data, ploidy, ploidy.range = NULL, parent.1, parent
             cat("INFO: Using ", n.clusters, " CPUs.\n")
         cl <- makeCluster(n.clusters, outfile="errorcluster.txt")
         ## clusterEvalQ(cl, require(mappoly))
-        clusterExport(cl, c('geno.depth', 'real_main'))
+        clusterExport(cl, c('real_main'))
         on.exit(stopCluster(cl))
         results.SM <- parLapply(cl,
                          geno.depth,
